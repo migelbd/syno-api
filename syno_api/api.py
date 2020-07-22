@@ -1,32 +1,11 @@
 from typing import Union, List, Tuple
 
-from .auth import Auth
-from .base_request import BaseApiInterface
+from .base import BaseApiInterface
 from .entities.downloadstation import TaskList, Task, TaskInfo
 from .exceptions import SynoApiError
 
 
 class DownloadStation(BaseApiInterface):
-
-    def get_exception_map(self, code):
-        exc_map = {
-            400: DownloadStation.FileUploadFailed,
-            401: DownloadStation.MaxNumberTaskReached,
-            402: DownloadStation.DestinationDenied,
-            403: DownloadStation.DestinationDoesNotExists,
-            404: DownloadStation.TaskNotFound,
-            405: DownloadStation.InvalidTaskAction,
-            406: DownloadStation.NoDefaultDestination,
-            407: DownloadStation.SetDestinationFailed,
-            408: DownloadStation.FileDoesNotExists
-        }
-        return exc_map.get(code, super(DownloadStation, self).get_exception_map(code))
-
-    def __init__(self, username, password, host, port=5000, secure=False):
-        super().__init__(username, password, host, port, secure)
-        self.auth = Auth(username, password, host, port, secure)
-        self.auth.login(self.api_name)
-        self._sid = self.auth.sid()
 
     def task_list(self, offset=0, limit=-1, additional=None) -> TaskList:
         """
@@ -40,7 +19,7 @@ class DownloadStation(BaseApiInterface):
             additional = ','.join(additional)
         response = self.request_get('Task', 'list', additional=additional, offset=offset, limit=limit)
 
-        return TaskList(response)
+        return TaskList(response.data)
 
     def task_create(self, uri_or_file, destination=None, username=None, password=None, unzip_password=None) -> bool:
         """
@@ -78,7 +57,7 @@ class DownloadStation(BaseApiInterface):
         else:
             response = self.request_get('Task', 'create', **request_params)
 
-        return response
+        return response.is_success
 
     def task_pause(self, task_id: Union[str, List[str], Tuple[str], Task]):
         if isinstance(task_id, (list, tuple,)):
@@ -120,7 +99,7 @@ class DownloadStation(BaseApiInterface):
             additional = ','.join(additional)
         response = self.request_get('Task', 'getinfo', id=task_id, additional=additional)
 
-        return TaskInfo(response)
+        return TaskInfo(response.data)
 
     class FileUploadFailed(SynoApiError):
         code = 400

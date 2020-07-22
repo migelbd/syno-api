@@ -3,8 +3,8 @@ class SynoApiError(Exception):
     message = 'SynoApiError'
     response_data = None
 
-    def __init__(self, message=None, response_data=None, *args):
-        self.response_data = response_data
+    def __init__(self, message=None, response_obj=None, *args):
+        self.response_obj = response_obj
         super().__init__(message or self.message, *args)
 
 
