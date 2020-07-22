@@ -14,7 +14,7 @@ setup(
     long_description=long_description,
     long_description_content_type='text/markdown',
     install_requires=['requests'],
-    url='https://github.com/N4S4/synology-api',
+    url='https://github.com/migelbd/syno-api',
     author='Mikhail Badrazhan',
     author_email='migel.bd@gmail.com'
 )
