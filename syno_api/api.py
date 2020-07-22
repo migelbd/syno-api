@@ -94,11 +94,7 @@ class DownloadStation(BaseApiInterface):
         elif isinstance(task_id, Task):
             task_id = task_id.id
 
-        response, error_code = self.request_get('Task', 'resume', id=task_id)
-
-        if error_code:
-            raise self.get_exception_map(error_code)(response_data=response)
-        return response
+        return self.request_get('Task', 'resume', id=task_id)
 
     def task_delete(self, task_id: Union[str, List[str], Tuple[str], Task], force_complete: bool = False):
         if isinstance(task_id, (list, tuple,)):
@@ -106,11 +102,7 @@ class DownloadStation(BaseApiInterface):
         elif isinstance(task_id, Task):
             task_id = task_id.id
 
-        response, error_code = self.request_get('Task', 'delete', id=task_id, force_complete=force_complete)
-
-        if error_code:
-            raise self.get_exception_map(error_code)(response_data=response)
-        return response
+        return self.request_get('Task', 'delete', id=task_id, force_complete=force_complete)
 
     def task_info(self, task_id: Union[str, List[str], Tuple[str], Task], additional=None) -> TaskInfo:
         """
@@ -126,10 +118,8 @@ class DownloadStation(BaseApiInterface):
 
         if additional:
             additional = ','.join(additional)
-        response, error_code = self.request_get('Task', 'getinfo', id=task_id, additional=additional)
+        response = self.request_get('Task', 'getinfo', id=task_id, additional=additional)
 
-        if error_code:
-            raise self.get_exception_map(error_code)(response_data=response)
         return TaskInfo(response)
 
     class FileUploadFailed(SynoApiError):
