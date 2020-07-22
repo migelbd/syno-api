@@ -3,7 +3,9 @@ from typing import Optional
 import requests
 
 from syno_api.exceptions import SynoApiError
+import logging
 
+logger = logging.getLogger(__name__)
 
 def raise_common_exception(code, response_data):
     from . import exceptions
@@ -51,7 +53,7 @@ class BaseApiInterface:
         'SYNO.DownloadStation.Info',
     ]
 
-    def __init__(self, username, password, host, port=5000, secure=False):
+    def __init__(self, username, password, host, port=5000, secure=False, auto_login=True):
         self.schema = 'https' if secure else 'http'
         self._host = host
         self._port = port
@@ -62,6 +64,21 @@ class BaseApiInterface:
         self._session_expired = True
         self._api_list = dict()
         self._app_api_list = dict()
+        if auto_login:
+            self.login()
+
+    def login(self):
+        if not self._session_expired and self._sid:
+            self._session_expired = False
+            logger.info('User already logged')
+            return True
+        response = self.request_get('SYNO.API.Auth', 'login', account=self._username, passwd=self._password,
+                                    session=self.api_name,
+                                    format='cookie')
+        self._sid = response.get('sid')
+        self._session_expired = False
+        logger.info('User logging... New session started!')
+        return bool(self._sid)
 
     def sid(self):
         return self._sid

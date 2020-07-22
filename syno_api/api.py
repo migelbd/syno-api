@@ -1,7 +1,7 @@
 from typing import Union, List, Tuple
 
 from .auth import Auth
-from .base_request import BaseApiInterface, get_error_code
+from .base_request import BaseApiInterface
 from .entities.downloadstation import TaskList, Task, TaskInfo
 from .exceptions import SynoApiError
 

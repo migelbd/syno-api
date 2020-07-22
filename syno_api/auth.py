@@ -20,19 +20,5 @@ class Auth(BaseApiInterface):
         }
         return exc_map.get(code, super(Auth, self).get_exception_map(code))
 
-    @property
-    def api_name(self):
-        return 'SYNO.API.Auth'
 
-    def login(self, api_name):
-        if not self._session_expired and self._sid:
-            self._session_expired = False
-            logger.info('User already logged')
-            return True
-        response = self.request_get(None, 'login', account=self._username, passwd=self._password,
-                                    session=api_name,
-                                    format='cookie')
-        self._sid = response.get('sid')
-        self._session_expired = False
-        logger.info('User logging... New session started!')
-        return bool(self._sid)
+
