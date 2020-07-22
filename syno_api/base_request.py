@@ -2,6 +2,25 @@ from typing import Optional
 
 import requests
 
+from syno_api.exceptions import SynoApiError
+
+
+def raise_common_exception(code, response_data):
+    from . import exceptions
+    exceptions_map = {
+        100: exceptions.UnknownError,
+        101: exceptions.InvalidParameter,
+        102: exceptions.InvalidRequestAPI,
+        103: exceptions.MethodNotExists,
+        104: exceptions.NotSupportVersion,
+        105: exceptions.ForbiddenRequest,
+        106: exceptions.SessionTimeout,
+        107: exceptions.SessionInterrupted,
+    }
+    exc = exceptions_map.get(code)
+    if exc:
+        raise exc(response_data=response_data)
+
 
 def _prepare_params(params):
     result_params = {}
@@ -29,6 +48,7 @@ class BaseApiInterface:
         'SYNO.API.Auth',
         'SYNO.DownloadStation.Task',
         'SYNO.DownloadStation.Schedule',
+        'SYNO.DownloadStation.Info',
     ]
 
     def __init__(self, username, password, host, port=5000, secure=False):
@@ -47,7 +67,18 @@ class BaseApiInterface:
         return self._sid
 
     def get_exception_map(self, code):
-        raise NotImplementedError
+        from . import exceptions
+        exc_map = {
+            100: exceptions.UnknownError,
+            101: exceptions.InvalidParameter,
+            102: exceptions.InvalidRequestAPI,
+            103: exceptions.MethodNotExists,
+            104: exceptions.NotSupportVersion,
+            105: exceptions.ForbiddenRequest,
+            106: exceptions.SessionTimeout,
+            107: exceptions.SessionInterrupted,
+        }
+        return exc_map.get(code)
 
     @property
     def api_name(self):
@@ -102,9 +133,12 @@ class BaseApiInterface:
 
         if response.status_code != 200:
             raise Exception('HTPP Error')
-
-        response_data = response.json()
-
+        response_json = response.json()
+        response_data = response_json.get('data') or response_json.get('success', False)
+        error_code = get_error_code(response_json)
+        error = self.get_exception_map(error_code)
+        if error:
+            raise error(response_data=response_data)
         return response_data
 
     def request_get(self, sub_api_name, method, **params):
@@ -115,9 +149,7 @@ class BaseApiInterface:
 
         if not str(req_api_name).startswith(self.__API_PREFIX):
             req_api_name = f'{self.__API_PREFIX}.{self.api_name}.{sub_api_name}'
-        response = self._request(req_api_name, params, method='get')
-        response_data = response.get('data') or response.get('success', False)
-        return response_data, get_error_code(response)
+        return self._request(req_api_name, params, method='get')
 
     def request_post(self, sub_api_name, method, **params):
         params['method'] = method
@@ -127,8 +159,5 @@ class BaseApiInterface:
 
         if not str(req_api_name).startswith(self.__API_PREFIX):
             req_api_name = f'{self.__API_PREFIX}.{self.api_name}.{sub_api_name}'
-
-        response = self._request(req_api_name, params, method='post')
-        response_data = response.get('data') or response.get('success', False)
-        return response_data, get_error_code(response)
+        return self._request(req_api_name, params, method='post')
 

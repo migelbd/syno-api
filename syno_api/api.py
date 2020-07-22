@@ -20,7 +20,7 @@ class DownloadStation(BaseApiInterface):
             407: DownloadStation.SetDestinationFailed,
             408: DownloadStation.FileDoesNotExists
         }
-        return exc_map.get(code, SynoApiError)
+        return exc_map.get(code, super(DownloadStation, self).get_exception_map(code))
 
     def __init__(self, username, password, host, port=5000, secure=False):
         super().__init__(username, password, host, port, secure)
@@ -38,32 +38,81 @@ class DownloadStation(BaseApiInterface):
         """
         if additional:
             additional = ','.join(additional)
-        response, error_code = self.request_get('Task', 'list', additional=additional, offset=offset, limit=limit)
+        response = self.request_get('Task', 'list', additional=additional, offset=offset, limit=limit)
 
-        if error_code:
-            raise self.get_exception_map(error_code)(response_data=response)
         return TaskList(response)
 
-    def task_create(self, uri):
-        pass
+    def task_create(self, uri_or_file, destination=None, username=None, password=None, unzip_password=None) -> bool:
+        """
+            Create task
 
-    def task_pause(self, task_id: Union[str, list, tuple]):
+        :param uri_or_file: Accepts HTTP/FTP/magnet/ED2K links or the file path starting with a shared folder
+        :param destination: Download destination path starting with a shared folder
+        :param username: Login username
+        :param password: Login password
+        :param unzip_password: Password for unzipping download tasks
+        :raise DestinationDenied:
+        :raise DestinationDoesNotExists:
+        :raise NoDefaultDestination:
+        :raise SetDestinationFailed:
+        :rtype bool:
+        :return True if success:
+        """
+        uri = None
+        file = None
+
+        if isinstance(uri_or_file, str):
+            uri = uri_or_file
+        else:
+            file = uri_or_file
+        request_params = dict(
+            uri=uri,
+            file=file,
+            destination=destination,
+            username=username,
+            password=password,
+            unzip_password=unzip_password
+        )
+        if file:
+            response = self.request_post('Task', 'create', **request_params)
+        else:
+            response = self.request_get('Task', 'create', **request_params)
+
+        return response
+
+    def task_pause(self, task_id: Union[str, List[str], Tuple[str], Task]):
         if isinstance(task_id, (list, tuple,)):
             task_id = ','.join(task_id)
+        elif isinstance(task_id, Task):
+            task_id = task_id.id
 
-        response, error_code = self.request_get('Task', 'pause', id=task_id)
+        return self.request_get('Task', 'pause', id=task_id)
+
+    def task_resume(self, task_id: Union[str, List[str], Tuple[str], Task]):
+        if isinstance(task_id, (list, tuple,)):
+            task_id = ','.join(task_id)
+        elif isinstance(task_id, Task):
+            task_id = task_id.id
+
+        response, error_code = self.request_get('Task', 'resume', id=task_id)
 
         if error_code:
             raise self.get_exception_map(error_code)(response_data=response)
         return response
 
-    def task_resume(self):
-        pass
+    def task_delete(self, task_id: Union[str, List[str], Tuple[str], Task], force_complete: bool = False):
+        if isinstance(task_id, (list, tuple,)):
+            task_id = ','.join(task_id)
+        elif isinstance(task_id, Task):
+            task_id = task_id.id
 
-    def task_delete(self):
-        pass
+        response, error_code = self.request_get('Task', 'delete', id=task_id, force_complete=force_complete)
 
-    def task_info(self, task_id: Union[str, List[str], Tuple[str], Task], additional=None):
+        if error_code:
+            raise self.get_exception_map(error_code)(response_data=response)
+        return response
+
+    def task_info(self, task_id: Union[str, List[str], Tuple[str], Task], additional=None) -> TaskInfo:
         """
 
         :param task_id:
