@@ -10,12 +10,13 @@ class DownloadStation(BaseApiInterface):
     def task_list(self, offset=0, limit=-1, additional=None) -> TaskList:
         """
         List of tasks
+
         :param offset:
         :param limit:
         :param additional:
         :return:
         """
-        if additional:
+        if isinstance(additional, (list, tuple)):
             additional = ','.join(additional)
         response = self.request_get('Task', 'list', additional=additional, offset=offset, limit=limit)
 
@@ -23,7 +24,7 @@ class DownloadStation(BaseApiInterface):
 
     def task_create(self, uri_or_file, destination=None, username=None, password=None, unzip_password=None) -> bool:
         """
-            Create task
+        Create task
 
         :param uri_or_file: Accepts HTTP/FTP/magnet/ED2K links or the file path starting with a shared folder
         :param destination: Download destination path starting with a shared folder
@@ -60,6 +61,12 @@ class DownloadStation(BaseApiInterface):
         return response.is_success
 
     def task_pause(self, task_id: Union[str, List[str], Tuple[str], Task]):
+        """
+        Pause task
+
+        :param task_id:
+        :return:
+        """
         if isinstance(task_id, (list, tuple,)):
             task_id = ','.join(task_id)
         elif isinstance(task_id, Task):
@@ -68,6 +75,12 @@ class DownloadStation(BaseApiInterface):
         return self.request_get('Task', 'pause', id=task_id)
 
     def task_resume(self, task_id: Union[str, List[str], Tuple[str], Task]):
+        """
+        Resume task
+
+        :param task_id:
+        :return:
+        """
         if isinstance(task_id, (list, tuple,)):
             task_id = ','.join(task_id)
         elif isinstance(task_id, Task):
@@ -76,6 +89,13 @@ class DownloadStation(BaseApiInterface):
         return self.request_get('Task', 'resume', id=task_id)
 
     def task_delete(self, task_id: Union[str, List[str], Tuple[str], Task], force_complete: bool = False):
+        """
+        Delete task
+
+        :param task_id:
+        :param force_complete:
+        :return:
+        """
         if isinstance(task_id, (list, tuple,)):
             task_id = ','.join(task_id)
         elif isinstance(task_id, Task):
@@ -85,6 +105,7 @@ class DownloadStation(BaseApiInterface):
 
     def task_info(self, task_id: Union[str, List[str], Tuple[str], Task], additional=None) -> TaskInfo:
         """
+        Task info
 
         :param task_id:
         :param additional:
@@ -95,11 +116,26 @@ class DownloadStation(BaseApiInterface):
         elif isinstance(task_id, Task):
             task_id = task_id.id
 
-        if additional:
+        if isinstance(additional, (list, tuple)):
             additional = ','.join(additional)
         response = self.request_get('Task', 'getinfo', id=task_id, additional=additional)
 
         return TaskInfo(response.data)
+
+    def task_edit(self, task_id: Union[str, List[str], Tuple[str], Task], destination: str):
+        """
+        Edit task destination
+
+        :param task_id:
+        :param destination:
+        :return:
+        """
+        if isinstance(task_id, (list, tuple,)):
+            task_id = ','.join(task_id)
+        elif isinstance(task_id, Task):
+            task_id = task_id.id
+
+        return self.request_get('Task', 'edit', id=task_id, destination=destination)
 
     class FileUploadFailed(SynoApiError):
         code = 400
